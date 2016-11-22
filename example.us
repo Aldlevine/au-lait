@@ -1,0 +1,123 @@
+#!# imba
+
+let EACH = < (arr, cb) >
+  EACH( arr, cb )
+
+let IF = < (cond) >
+  IF( cond, $children )
+
+let UNLESS = < (cond) >
+  UNLESS( cond, $children )
+
+
+let compWithChildren = < >
+  <div.comp-with-children ...$props>
+    $children
+
+let comp = < id='default', param2={a: 'default', b: 'default'0} >
+  <div.comp id=id>
+    'A is: '
+    <span> a
+    'B is: '
+    <span> b
+
+let html = < >
+  <table#winning-table name='TEXTICLE'>
+    <tr>
+      <th.corner>
+      <th.col> 'Header 1'
+      <th.col> 'Header 2'
+    <tr>
+      <th.row> 'Row Label 1'
+      <th.row> 'R1 C1'
+      <th.row> 'R1 C2'
+    <tr>
+      <th.row> 'Row Label 2'
+      <th.row> 'R2 C1'
+      <th.row> 'R2 C2'
+  <br>
+  'TEXT'
+  <br>
+  <br>
+  IF( x == 1 ) <h4 style={color: 'red'}> 'x == 1'
+  UNLESS( x == 1 )
+    <div> 'x != 2'
+  <br>
+  EACH( arr )(el) => {
+    <div> el
+  }
+  <br>
+  <comp>
+  <comp#test1>
+  <comp id='test2', param={a: 'not-default'}>
+  <comp param={a: 'not-default', b: 'not-default'}>
+  <compWithChildren data={extra: 'winning'}>
+    <div> "I'm a child!!!"
+    <div> "I'm another child!!!"
+
+<div>
+# US('div')
+# ['div']
+
+<div>
+  <div val=1>
+# US('div', US('div', {val: 1}))
+# ['div', ['div', {val:1}]]
+
+<(param)>
+# (param)=>US()
+# (param)=>[]
+
+let fn = <(param)>
+  <div> param
+# (param)=>US(US('div', param))
+# (param)=>[['div', param]]
+
+<fn ('hello')>
+# fn('hello')
+# US(US('div', 'hello'))
+# [['div', 'hello']]
+
+<fn>
+  <div> 'hello'
+# fn(US('div', 'hello'))
+# US(US('div', US('div', 'hello')))
+# fn(['div', 'hello'])
+# [['div', ['div', 'hello']]]
+
+
+# USE TAG
+< $TAGNAME [$PROP,...] >
+  $CHILDREN
+
+==>
+
+['$TAGNAME', {$KEY:$EXPR,...}, $CHILDREN]
+
+######
+
+# DECLARE FUNCTION
+< [$PROP,...] [$PARAM_LIST] >
+  $CHILDREN
+
+==>
+
+({$KEY:$EXPR,...}, $PARAM_LIST,...) => $CHILDREN;
+
+######
+
+# USE FUNCTION
+< $TAGNAME [$PROP,...] $PARAM_LIST >
+  $CHILDREN
+
+==>
+
+$TAGNAME({$KEY:$EXPR,...}, $PARAM_LIST,... $CHILDREN,...)
+
+######
+
+# PARAM_LIST
+(...)
+
+# PROP
+$KEY[=$EXPR]
