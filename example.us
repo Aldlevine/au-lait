@@ -1,27 +1,19 @@
 #!# imba
 
-let EACH = < (arr, cb) >
-  EACH( arr, cb )
+function TEST(props) {
+  return <div.solo name=props.name>
+}
 
-let IF = < (cond) >
-  IF( cond, $children )
+function TEST_WITH_CHILDREN(props) {
+  return (children) => {
+    return <div.parent name=props.name>
+      for ( let el in children )
+        <div.child>
+          el
+  }
+}
 
-let UNLESS = < (cond) >
-  UNLESS( cond, $children )
-
-
-let compWithChildren = < >
-  <div.comp-with-children ...$props>
-    $children
-
-let comp = < id='default', param2={a: 'default', b: 'default'0} >
-  <div.comp id=id>
-    'A is: '
-    <span> a
-    'B is: '
-    <span> b
-
-let html = < >
+let html =
   <table#winning-table name='TEXTICLE'>
     <tr>
       <th.corner>
@@ -39,21 +31,16 @@ let html = < >
   'TEXT'
   <br>
   <br>
-  IF( x == 1 ) <h4 style={color: 'red'}> 'x == 1'
-  UNLESS( x == 1 )
+  if ( x == 1 )
+    <h4 style={color: 'red'}> 'x == 1'
+  else
     <div> 'x != 2'
   <br>
-  EACH( arr )(el) => {
+  for ( let el of arr )
     <div> el
-  }
   <br>
-  <comp>
-  <comp#test1>
-  <comp id='test2', param={a: 'not-default'}>
-  <comp param={a: 'not-default', b: 'not-default'}>
-  <compWithChildren data={extra: 'winning'}>
-    <div> "I'm a child!!!"
-    <div> "I'm another child!!!"
+
+
 
 <div>
 # US('div')
