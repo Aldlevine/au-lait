@@ -1,110 +1,24 @@
-#!# imba
+#! # js
 
-function TEST(props) {
-  return <div.solo name=props.name>
-}
-
-function TEST_WITH_CHILDREN(props) {
-  return (children) => {
-    return <div.parent name=props.name>
-      for ( let el in children )
-        <div.child>
-          el
+let el =
+<- div#id.class {
+  key:'pr}op',
+  key2:'prop2',
+  // this is a comment }
+} >
+  <+ div#id2.class {key:'prop', key2:'prop2' /*}*/} > <+'Hello world!!!'>
+  <+ ul >
+    <+ li > <+ 'Winning' >
+    <+ li > <+ 'Still Winning' >
+  for ( let i=1, ii=10; i<=ii; i++ ) {
+    if ( i == 5 ) <+ div.class3 >
+      <+ 'This is the 5th item' >
+    else <+ div.class2 {id:'id-'+i} >
+      <+ `Item ${i+` he}llo`/*}*/}` >
   }
-}
+  //<+ @Custom {im: 'awesome'} >
+  <+ /*Comment is comment like*/ >
+  let str = '<+ hello >'
+  /* <+`${str}`> */
 
-let html =
-  <table#winning-table name='TEXTICLE'>
-    <tr>
-      <th.corner>
-      <th.col> 'Header 1'
-      <th.col> 'Header 2'
-    <tr>
-      <th.row> 'Row Label 1'
-      <th.row> 'R1 C1'
-      <th.row> 'R1 C2'
-    <tr>
-      <th.row> 'Row Label 2'
-      <th.row> 'R2 C1'
-      <th.row> 'R2 C2'
-  <br>
-  'TEXT'
-  <br>
-  <br>
-  if ( x == 1 )
-    <h4 style={color: 'red'}> 'x == 1'
-  else
-    <div> 'x != 2'
-  <br>
-  for ( let el of arr )
-    <div> el
-  <br>
-
-
-
-<div>
-# US('div')
-# ['div']
-
-<div>
-  <div val=1>
-# US('div', US('div', {val: 1}))
-# ['div', ['div', {val:1}]]
-
-<(param)>
-# (param)=>US()
-# (param)=>[]
-
-let fn = <(param)>
-  <div> param
-# (param)=>US(US('div', param))
-# (param)=>[['div', param]]
-
-<fn ('hello')>
-# fn('hello')
-# US(US('div', 'hello'))
-# [['div', 'hello']]
-
-<fn>
-  <div> 'hello'
-# fn(US('div', 'hello'))
-# US(US('div', US('div', 'hello')))
-# fn(['div', 'hello'])
-# [['div', ['div', 'hello']]]
-
-
-# USE TAG
-< $TAGNAME [$PROP,...] >
-  $CHILDREN
-
-==>
-
-['$TAGNAME', {$KEY:$EXPR,...}, $CHILDREN]
-
-######
-
-# DECLARE FUNCTION
-< [$PROP,...] [$PARAM_LIST] >
-  $CHILDREN
-
-==>
-
-({$KEY:$EXPR,...}, $PARAM_LIST,...) => $CHILDREN;
-
-######
-
-# USE FUNCTION
-< $TAGNAME [$PROP,...] $PARAM_LIST >
-  $CHILDREN
-
-==>
-
-$TAGNAME({$KEY:$EXPR,...}, $PARAM_LIST,... $CHILDREN,...)
-
-######
-
-# PARAM_LIST
-(...)
-
-# PROP
-$KEY[=$EXPR]
+document.body.appendChild(el);
