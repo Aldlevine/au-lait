@@ -1,0 +1,14 @@
+expr                    //= Expression    --  * Until depth=0 OR whitespace OR >
+tagname                 //= Tagname       --  /^[a-zA-Z]+[a-zA-Z0-9]*$/
+id                      //= Id            --  /^[\$_a-zA-Z]+[\$_a-zA-Z0-9]*$/
+selector                //= Selector      --  /^(<tagname>)*(#<id>){0,1}(\.<id>)*$/
+<%[expr]>               //= Document      --  $$parent.document([$2=null], ($$parent)=>{...})
+<:selector [expr]>      //= Element       --  $$parent.element([$1='div'], [$2=''], [$3=[]], [$4={}], ($$parent)=>{...})
+<|expr>                 //= Text          --  $$parent.text([$1=''])
+<\expr>                 //= Comment       --  $$parent.comment([$1=''])
+<&expr>                 //= Reference     --  $$parent.reference($1)
+<@expr [expr]>          //= Construct     --  $$parent.construct($1, $2, ($$parent)=>{...})
+@                       //= This          --  this
+@id                     //= ThisKey       --  this.$1
+<<*...>                 //= Declare       --  $$.*(...)
+<<<*...>                //= Returns       -- return $$.*(...)

@@ -1,118 +1,105 @@
-/**
- * TODO I'd like to abstract out some of the WET code.
- */
+const Scanner = require('./scanner');
+const Tag = require('./tag');
+const { TAG_CONTAINER,
+        DOCUMENT,
+        ELEMENT,
+        TEXT,
+        COMMENT,
+        REFERENCE,
+        CLASS,
+        CONTAINERS,
+        INDENT_CHAR } = require('./constants');
+
 
 module.exports = {
   default: compile,
   compile,
 };
 
-const TAG_CONTAINER = '<>';
-const DECLARATIVE = '-';
-const ADDITIVE = '+';
-const CONTAINERS = ['{}','[]','()'];
-const INDENT_CHAR = {
-  SPACE: ' ',
-  TAB: '\t'
+
+function isContainerStart (char) {
+  for ( let con of CONTAINERS ) {
+    if ( char == con[0] ) return true;
+  }
+  return false;
 }
 
 
-function eatWhiteSpace (str) {
-  return str.replace(/^\s+/, '');
-}
-
-
-function getChar (str) {
-  return {str: str.slice(1), char: str[0]};
-}
-
-
-function getIndentLevel (str, indentChar, indentCount) {
+function parseBlockComment (scr) {
+  let char;
+  let value = '';
   let i = 0;
-  // Find all indent characters at beginning of line
-  while ( str[i] === indentChar ) i++;
-  // Make sure next char is not unused indent char
-  for ( key in INDENT_CHAR ) {
-    if ( INDENT_CHAR[key] === indentChar ) continue;
-    if ( str[i] == INDENT_CHAR[key] ) throw SyntaxError(''); // TODO Better errors
-  }
-
-  // Make sure the number of indentChars divides evenly by indentCount
-  if ( i % indentCount != 0 ) {
-    throw SyntaxError('Uneven Indent'); // TODO Better errors
-  }
-
-  return {str: str.slice(i), indentLevel: i/indentCount};
-}
-
-
-function parseBlockComment (str) {
-  let char;
-  let content = '';
-  while ( ({str, char} = getChar(str)).char ) {
-    // Comment over
-    if ( char == '*' && str[0] == '/' ) {
-      str = str.slice(1);
-      return {str, content};
+  while ( char = scr.next() ) {
+    i++;
+    if ( char == '*' && scr.peek()[0] == '/' ) {
+      scr.next()
+      return value;
     }
-    content += char;
+    value += char;
   }
-  throw SyntaxError(''); // TODO Better errors
+  scr.prev(i);
+  scr.error('Unterminated block comment');
 }
 
 
-function parseLineComment (str) {
+function parseLineComment (scr) {
   let char;
-  let content = '';
-  while ( ({str, char} = getChar(str)).char ) {
+  let value = '';
+  while ( char = scr.next() ) {
     // Comment over
-    if ( char == '\n' || char == '\r' ) {
-      return {str: char+str, content};
+    if ( char == '\n' ) {
+      scr.prev();
+      return value;
     }
-    content += char;
+    value += char;
   }
 }
 
 
-function parseString (str, delim) {
+function parseString (scr, delim) {
   let char;
   let escape = false;
-  let content = '';
-  let props;
-  while ( ({str, char} = getChar(str)).char ) {
+  let value = '';
+  let expr;
+  let i = 0;
+  while ( char = scr.next() ) {
+    i++;
     // Escape
     if ( char == '\\' ) {
       escape = !escape;
-      content += char;
+      value += char;
       continue;
     }
     // Interpolation
-    if ( char == '$' && str[0] == '{' && !escape ) {
-      ({str, props} = parseObject(str));
-      content += char + props;
+    if ( char == '$' && scr.peek()[0] == '{' && !escape ) {
+      expr = parseContainer(scr);
+      value += char + expr;
       continue;
     }
     // String Over
     if ( char == delim && !escape ) {
-      return {str, content};
+      return value;
     }
-    content += char;
+    value += char;
   }
-  throw SyntaxError(''); // TODO Better errors
+  scr.prev(i);
+  scr.error('Unterminated string constant');
 }
 
 
-function parseObject (str) {
+function parseContainer (scr) {
   let char;
-  let props = '';
+  let expr = '';
   let containerLevels = {};
   let depth = 0;
-  let content;
+  let value;
+  let i = 0;
   // Build list of container counts
   for ( let str of CONTAINERS ) {
     containerLevels[str] = 0;
   }
-  while ( ({str, char} = getChar(str)).char ) {
+  while ( char = scr.next() ) {
+    i++;
     // Check containerLevel
     depth = 0;
     for ( let container in containerLevels ) {
@@ -122,180 +109,268 @@ function parseObject (str) {
       depth += containerLevels[container];
     }
 
+    // This
+    if ( char == CLASS ) {
+      expr += 'this';
+      if ( /[a-zA-Z\$_]/.test(scr.peek()[0]) ) expr += '.';
+      continue;
+    }
+
     // String
     if ( char == '\'' || char == '"' || char == '`' ) {
-      ({str, content} = parseString(str, char));
-      props += char + content + char;
+      value = parseString(scr, char);
+      expr += char + value + char;
       continue;
     }
 
     // Comment
     if ( char == '/' ) {
       // Block Comment
-      if ( str[0] == '*' ) {
-        str = str.slice(1);
-        ({str, content} = parseBlockComment(str));
-        props += '/*' + content + '*/';
+      if ( scr.peek()[0] == '*' ) {
+        scr.next();
+        value = parseBlockComment(scr);
+        expr += '/*' + value + '*/';
         continue;
       }
+
       // Line Comment
-      if ( str[0] == '/' ) {
-        str = str.slice(1);
-        ({str, content} = parseLineComment(str));
-        props += '//' + content;
+      if ( scr.peek()[0] == '/' ) {
+        scr.next();
+        value = parseLineComment(scr);
+        expr += '//' + value;
         continue;
       }
     }
 
-    props += char;
-    // We've completed our props
+    expr += char;
     if ( depth == 0 ) {
-      return {str, props};
+      return expr;
     }
   }
-  throw SyntaxError(''); // TODO Better errors
+  scr.prev(i+1);
+  scr.error('Unclosed container');
 }
 
 
-function parseCommentTag (str, tag) {
-  ({str, content: tag.value} = parseBlockComment(str));
-  str = eatWhiteSpace(str);
-  ({str, char} = getChar(str));
-  if ( char == TAG_CONTAINER[1] ) {
-    return {str, tag};
-  }
-  throw SyntaxError(''); // TODO Better errors
-}
-
-
-function parseTextTag (str, tag, delim) {
-  ({str, content: tag.value} = parseString(str, delim));
-  str = eatWhiteSpace(str);
-  ({str, char} = getChar(str));
-  if ( char == TAG_CONTAINER[1] ) {
-    return {str, tag};
-  }
-  throw SyntaxError(''); // TODO Better errors
-}
-
-
-function parseElementTag (str, tag) {
+function parseId (scr, delim) {
   let char;
-  let selectorDone = false;
-  tag.selector = '';
-  tag.props = '{}';
-
-  // Collect selector
-  while ( ({str, char} = getChar(str)).char ) {
-    // Got start of props
-    if ( char == '{' ) {
-      str = char + str;
-      break;
+  let id = '';
+  let i = 0;
+  while ( char = scr.next() ) {
+    // End
+    if ( char == ' ' || char == '\n' || char == '\r' || char == '\t' || char == TAG_CONTAINER[1] || delim.test(char) ) {
+      scr.prev();
+      return id;
     }
-    // Got whitespace
-    if ( char == ' ' || char == '\n' || char == '\r' || char == '\t' ) {
-    // if ( /\s/.test(char) ) {
-      str = eatWhiteSpace(str);
+    // Invalid
+    if ( ( i == 0 && !/[a-zA-Z_\$]/.test(char) ) || !/[0-9a-zA-Z_\$]/.test(char) )
+      scr.error('Invalid character in identifier');
+    id += char;
+    i++;
+  }
+}
+
+
+function parseIdClass (scr, delim) {
+  let char;
+  let id = '';
+  let i = 0;
+  while ( char = scr.next() ) {
+    // End
+    if ( char == ' ' || char == '\n' || char == '\r' || char == '\t' || char == TAG_CONTAINER[1] || delim.test(char) ) {
+      scr.prev();
+      return id;
+    }
+    // Invalid
+    if ( ( i == 0 && !/[a-zA-Z_\$]/.test(char) ) || !/[0-9a-zA-Z_\$\-]/.test(char) )
+      scr.error('Invalid character in identifier');
+    id += char;
+    i++;
+  }
+}
+
+
+function parseSelector (scr) {
+  let char;
+  let i = 0;
+  let tagname = '';
+  let id = '';
+  let classList = [];
+  let tmp;
+  while ( char = scr.next() ) {
+    // End
+    if ( char == ' ' || char == '\n' || char == '\r' || char == '\t' || char == TAG_CONTAINER[1] ) {
+      scr.prev();
+      return {tagname, id, classList};
+    }
+    // Id
+    if ( char == '#' ) {
+      if ( id.length ) scr.error('Redefinition of id in selector');
+      id = parseIdClass(scr, /#|\./);
+      if ( id.length == 0 ) scr.error('Expected identifier in id segment of selector');
       continue;
     }
-    // Got end
-    if ( char == TAG_CONTAINER[1] ) {
-      // str = str.slice(1);
-      return {str, tag};
+    // Class
+    if ( char == '.' ) {
+      tmp = parseIdClass(scr, /#|\./);
+      if ( tmp.length == 0 ) scr.error('Expected identifier in class segment of selector');
+      classList.push( tmp );
+      continue;
     }
-    // Is valid character?
-    if ( !/[a-zA-Z0-9\.\-\_#\$]/.test(char) ) {
-      throw SyntaxError(''); // TODO Better errors
-    }
-    tag.selector += char;
+    // Tagname
+    if ( !/[a-zA-Z0-9]/.test(char) ) scr.error(`Invalid character "${char}" in tagname`);
+    tagname += char;
   }
-
-  // Collect props
-  if ( str[0] !== '{' )
-    throw SyntaxError(''); // TODO Better errors
-
-  ( {str, props: tag.props} = parseObject(str) );
-
-  str = eatWhiteSpace(str);
-  ({str, char} = getChar(str));
-  if ( char != TAG_CONTAINER[1] ) {
-    throw SyntaxError(''); // TODO Better errros
-  }
-
-  return {str, tag};
 }
 
 
-function parseTag (str, opts) {
-  let tag = {};
-  let char, type;
-  ({str, char} = getChar(str));
-  tag.method = char == opts.declarative ? 'declarative' : 'additive';
-  str = eatWhiteSpace(str);
+function parseExpression (scr) {
+  let char;
+  let expr = '';
+  let peek;
+  while ( char = scr.next() ) {
+    // Container
+    if ( isContainerStart(char) ) {
+      scr.prev();
+      expr += parseContainer(scr);
+      continue;
+    }
 
-  while ( ({str, char} = getChar(str)).char ) {
-    // Comment?
-    if ( char == '/' ) {
-      // Comment
-      if ( str[0] == '*' ) {
-        str = str.slice(1);
-        tag.type = 'comment';
-        return parseCommentTag(str, tag);
-      }
-      throw SyntaxError(''); // TODO Better errors
+    // This
+    if ( char == CLASS ) {
+      expr += 'this';
+      if ( /[a-zA-Z\$_]/.test(scr.peek()[0]) ) expr += '.';
+      continue;
     }
 
     // String
-    if ( char == '\'' || char == '"' || char == '`' ) {
-      tag.type = 'text';
-      return parseTextTag(str, tag, char);
+    if ( char == '\'' || char == '"' || char == '`'  ) {
+      expr += char + parseString(scr, char) + char;
+      continue;
     }
 
-    // ELement
-    if ( /[a-zA-Z]/.test(char) ) {
-      tag.type = 'element';
-      return parseElementTag(char+str, tag);
+    // Comment
+    if ( char == '/' ) {
+      peek = scr.peek();
+      // Block Comment
+      if ( peek[0] == '*' ) {
+        scr.next()
+        value = parseBlockComment(scr);
+        expr += '/*' + value + '*/';
+        continue;
+      }
+      // Line Comment
+      if ( peek[0] == '/' ) {
+        scr.next();
+        value = parseLineComment(scr);
+        expr += '//' + value;
+        continue;
+      }
     }
 
-    // Class
-    if ( char == '@' ) {
-      tag.type = 'class';
-      return parseElementTag(str, tag);
+    // End
+    if ( char == ' ' || char == '\n' || char == '\r' || char == '\t' || char == TAG_CONTAINER[1] ) {
+      scr.prev();
+      return expr;
     }
-
-    throw SyntaxError(''); // TODO Better errors
+    expr += char;
   }
-
-  return {str, tag};
 }
 
+function parseTag (scr) {
+  let declare = false;
+  let returns = false;
+  let char = scr.next();
+  let tag;
+
+  // Declare
+  if ( char == TAG_CONTAINER[0] ) {
+    declare = true;
+    char = scr.next();
+  }
+
+  // Returns
+  if ( char == TAG_CONTAINER[0] ) {
+    returns = true;
+    char = scr.next();
+  }
+
+  // Document
+  if ( char == DOCUMENT ) {
+    let value = parseExpression(scr);
+    tag = new Tag({type: 'document', declare, returns, value});
+  }
+
+  // Element
+  if ( char == ELEMENT ) {
+    let selector = parseSelector(scr);
+    scr.eatWhitespace();
+    let value = parseExpression(scr);
+    tag = new Tag({type: 'element', declare, returns, tagname: selector.tagname, id: selector.id, classList: selector.classList, value});
+  }
+
+  // Text
+  else if ( char == TEXT ) {
+    let value = parseExpression(scr);
+    tag = new Tag({type: 'text', declare, returns, value});
+  }
+
+  // Comment
+  else if ( char == COMMENT ) {
+    let value = parseExpression(scr);
+    tag = new Tag({type: 'comment', declare, returns, value});
+  }
+
+  // Reference
+  else if ( char == REFERENCE ) {
+    let value = parseExpression(scr);
+    tag = new Tag({type: 'reference', declare, returns, value});
+  }
+
+  // Construct
+  else if ( char == CLASS ) {
+    let construct = parseExpression(scr);
+    scr.eatWhitespace();
+    let value = parseExpression(scr);
+    tag = new Tag({type: 'construct', declare, returns, construct, value});
+  }
+
+  scr.eatWhitespace();
+  if ( scr.next() != TAG_CONTAINER[1] )
+    scr.error(`Expected ${TAG_CONTAINER[1]}`);
+
+  return tag;
+}
 
 function parse (...args) {
-  let str = args[0];
   let opts = Object.assign({
+    // file,
     indentChar: INDENT_CHAR.SPACE,
     indentCount: 2,
-    tagContainer: TAG_CONTAINER,
-    declarative: DECLARATIVE,
-    additive: ADDITIVE,
-    bufIndentLevel: -1,
+    indentLevel: -1,
   }, args[1]);
+  let scr = typeof args[0] === 'string' ? new Scanner(args[0], opts.file, opts.indentChar, opts.indentCount) : args[0];
 
-  let buf = [];
-  let indentLevel = opts.bufIndentLevel;
+  let fullContent = [];
+  let content = [];
+  let indentLevel = opts.indentLevel;
   let chunk = '';
   let tag;
-  let content;
+  let value;
+  let peek;
+  let type;
 
-  while ( ({str, char} = getChar(str)).char ) {
+  while ( char = scr.next() ) {
     // New Line
     if ( char == '\n' ) {
-      buf.push(chunk);
-      ({str, indentLevel} = getIndentLevel(str, opts.indentChar, opts.indentCount));
-      chunk = char;
-      for ( let i=indentLevel * opts.indentCount; --i>=0; chunk += opts.indentChar);
-      if( indentLevel <= opts.bufIndentLevel && str[0] != '\n') {
-        str = chunk + str;
+      content.push(chunk);
+      indentLevel = scr.getIndentLevel();
+      chunk = char + Array(indentLevel * opts.indentCount).join(opts.indentChar);
+      if( indentLevel <= opts.indentLevel /*&& scr.peek()[0] != '\n'*/) {
+        if ( indentLevel > 0 )
+          scr.prev(chunk.length+1)
+        else
+          scr.prev(chunk.length)
         chunk = '';
         break;
       }
@@ -303,85 +378,105 @@ function parse (...args) {
     }
 
     // Tag Container
-    if ( char == opts.tagContainer[0] && (str[0] == opts.declarative || str[0] == opts.additive) ) {
-      // Flush chunk
-      buf.push(chunk);
-      ( {str, tag} = parseTag(str, opts) );
-      ( {str, buf: chunk} = parse(str, Object.assign({}, opts, {bufIndentLevel: indentLevel})) );
-      tag.buf = chunk;
-      tag.indent = '';
-      for ( let i=indentLevel * opts.indentCount; --i>=0; tag.indent += opts.indentChar);
-      buf.push(tag);
-      chunk = '';
+    peek = scr.peek();
+    if ( char == TAG_CONTAINER[0] ) {
+      type = peek[0];
+      if ( type == TAG_CONTAINER[0] ) type = peek[1];
+      if ( type == TAG_CONTAINER[0] ) type = peek[2];
+      if ( type == DOCUMENT || type == ELEMENT || type == TEXT || type == COMMENT || type == REFERENCE || type == CLASS ) {
+        content.push(chunk);
+        tag = parseTag(scr);
+        tag.content = parse(scr, {indentLevel});
+        tag.indent = Array(indentLevel * opts.indentCount).join(opts.indentChar);
+        content.push(tag);
+        chunk = '';
+        continue;
+      }
+    }
+
+    // This
+    if ( char == CLASS ) {
+      chunk += 'this';
+      if ( /[a-zA-Z\$_]/.test(scr.peek()[0]) ) chunk += '.';
       continue;
     }
 
     // String
     if ( char == '\'' || char == '"' || char == '`' ) {
-      ({str, content} = parseString(str, char));
-      chunk += char + content + char;
+      value = parseString(scr, char);
+      chunk += char + value + char;
       continue;
     }
 
     // Comment
     if ( char == '/' ) {
+      peek = scr.peek();
       // Block Comment
-      if ( str[0] == '*' ) {
-        str = str.slice(1);
-        ({str, content} = parseBlockComment(str));
-        chunk += '/*' + content + '*/';
+      if ( peek[0] == '*' ) {
+        scr.next()
+        value = parseBlockComment(scr);
+        chunk += '/*' + value + '*/';
         continue;
       }
       // Line Comment
-      if ( str[0] == '/' ) {
-        str = str.slice(1);
-        ({str, content} = parseLineComment(str));
-        chunk += '//' + content;
+      if ( peek[0] == '/' ) {
+        scr.next();
+        value = parseLineComment(scr);
+        chunk += '//' + value;
         continue;
       }
     }
 
     chunk += char;
   }
-  if ( chunk.length ) buf.push(chunk);
+  if ( chunk.length ) content.push(chunk);
 
-  return {str, buf};
+  return content;
 }
 
 
-function transform (buf) {
+function transpile (content, template) {
   let ret = '';
   let chunkStr;
-  for ( let chunk of buf ) {
+  let chunkContent;
+  let chunkIndent;
+  for ( let chunk of content ) {
     if ( typeof chunk === 'string' ) {
       ret += chunk;
       continue;
     }
 
-    chunkStr = '';
-    if ( chunk.type == 'text' ) {
-      chunkStr = `US.createText(\`${chunk.value}\`)`;
+    chunkStr = chunk.returns ? 'return ' : '';
+    chunkStr += chunk.declare ? '$$.' : '$$parent.';
+    if ( chunk.type == 'document' ) {
+      chunkStr += `document(${chunk.value||'null'}, ($$parent)=>{${transpile(chunk.content)}\n${chunk.indent}})`;
     }
-    if ( chunk.type == 'comment' ) {
-      chunkStr = `US.createComment('${chunk.value.replace(/'/g, `\\'`)}')`;
+    else if ( chunk.type == 'element' ) {
+      chunkContent = transpile(chunk.content);
+      chunkIndent = /\n/.test(chunkContent) ? `\n${chunk.indent}` : '';
+      chunkStr += `element("${chunk.tagname}", "${chunk.id}", ${JSON.stringify(chunk.classList)}, ${chunk.value||'{}'}, ($$parent)=>{${chunkContent}${chunkIndent}})`;
     }
-    if ( chunk.type == 'element' ) {
-      chunkStr = `US.createElement('${chunk.selector}', ${chunk.props}, ($parent)=>{${transform(chunk.buf)}\n${chunk.indent}})`;
+    else if ( chunk.type == 'text' || chunk.type == 'comment' || chunk.type == 'reference' ) {
+      chunkStr += `${chunk.type}(${chunk.value})`;
     }
-    if ( chunk.type == 'class' ) {
-      chunkStr = `${chunk.selector}.create(${chunk.props}, ($parent)=>{${transform(chunk.buf)}\n${chunk.indent}})`;
+    else if ( chunk.type == 'construct' ) {
+      chunkContent = transpile(chunk.content);
+      chunkIndent = /\n/.test(chunkContent) ? `\n${chunk.indent}` : '';
+      chunkStr += `construct(${chunk.construct}, ${chunk.value||'{}'}, ($$parent)=>{${chunkContent}${chunkIndent}})`;
     }
 
-    if ( chunk.method == 'additive' ) {
-      chunkStr = `$parent.add(${chunkStr})`;
-    }
-    ret += chunkStr+';';
+    ret += chunkStr;
   }
   return ret;
 }
 
 
 function compile (str, opts={}) {
-  let {buf} = parse(str, opts);
-  return transform(buf);
+  let content = parse(str, opts);
+  let js = transpile(content, opts.template);
+  if ( opts.template ) {
+    let resolvedDom = require.resolve('./dom').replace('\\', '/');
+    js = `const $$ = require('${resolvedDom}');\nmodule.exports = ($={})=>{\n${js}\n}`;
+  }
+  return js;
 }
