@@ -1,16 +1,19 @@
 {
-  "name": "uber-script",
-  "version": "1.0.0",
+  "name": "au-lait",
+  "version": "0.0.0",
   "description": "A language for embedded JS/HTML similar to imba or JSX.",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/aldlevine/uber-script.git"
+    "url": "git+https://github.com/Aldlevine/au-lait.git"
   },
   "author": "Aaron Levine",
   "license": "MIT",
-  "homepage": "https://bitbucket.org/aldlevine/uber-script#readme"
+  "bugs": {
+    "url": "https://github.com/Aldlevine/au-lait/issues"
+  },
+  "homepage": "https://github.com/Aldlevine/au-lait#readme"
 }
