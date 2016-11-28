@@ -1,5 +1,5 @@
 {
-  "name": "au-lait",
+  "name": "aulait",
   "version": "0.0.0",
   "description": "A language for embedded JS/HTML similar to imba or JSX.",
   "main": "src/index.js",

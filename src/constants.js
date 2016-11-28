@@ -1,11 +1,13 @@
 module.exports = {
   TAG_CONTAINER: '<>',
-  DOCUMENT: '%',
+  // DOCUMENT: '%',
   ELEMENT: ':',
   TEXT: '|',
   COMMENT: '\\',
   REFERENCE: '&',
   CLASS: '@',
+  CONSTRUCT: '#',
+  FUNCTION: '?',
   CONTAINERS: ['{}','[]','()'],
   INDENT_CHAR: {
     SPACE: ' ',

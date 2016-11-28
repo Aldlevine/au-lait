@@ -15,8 +15,8 @@ class $$ {
     this.children = new Set();
   }
 
-  static document (...args) { return new $$Document(...args) }
-  document (...args) { this.add(new $$Document(...args)) }
+  static group (...args) { return new $$Group(...args) }
+  group (...args) { this.add(new $$Group(...args)) }
 
   static element (...args) { return new $$Element(...args) }
   element (...args) { this.add(new $$Element(...args)) }
@@ -53,10 +53,9 @@ class $$ {
 }
 
 
-class $$Document extends $$ {
-  constructor (value, cb) {
+class $$Group extends $$ {
+  constructor (cb) {
     super();
-    this.value = value;
     cb && cb(this);
   }
 
@@ -77,19 +76,17 @@ class $$Document extends $$ {
 
   toString () {
     let ret = '';
-    if ( this.value ) ret = `<!DOCTYPE ${this.value}>`;
-    let children = '';
     for ( let child of this.children )
-      children += `${child.toString()}`;
-    return ret + children;
+      ret += `${child.toString()}`;
+    return ret;
   }
 }
 
 
 class $$Element extends $$ {
-  constructor (tagname, id, classList, attrs, cb) {
+  constructor (name, id, classList, attrs, cb) {
     super();
-    this.tagname = tagname || 'div';
+    this.name = name || 'div';
     this.attrs = attrs;
 
     if ( id ) this.attrs.id = id;
@@ -107,7 +104,7 @@ class $$Element extends $$ {
   }
 
   clone () {
-    let clone = new this.constructor(this.tagname, null, null, this.attrs);
+    let clone = new this.constructor(this.name, null, null, this.attrs);
     for ( let child of this.children ) {
       clone.children.add(child.clone());
     }
@@ -115,7 +112,10 @@ class $$Element extends $$ {
   }
 
   toDom () {
-    let el = document.createElement(this.tagname);
+    // Doctype
+    if ( this.name == 'doctype' ) return null;
+
+    let el = document.createElement(this.name);
     for ( let key in this.attrs ) {
       // Class
       if ( key == 'class' ) {
@@ -139,6 +139,11 @@ class $$Element extends $$ {
   }
 
   toString () {
+    // Doctype
+    if ( this.name == 'doctype' ) {
+      return `<!DOCTYPE ${this.attrs}>`;
+    }
+
     let ret = '';
     let attrs = '';
     for ( let key in this.attrs ) {
@@ -160,14 +165,14 @@ class $$Element extends $$ {
         attrs += ` ${key}="${this.attrs[key]}"`;
       }
     }
-    ret += `<${this.tagname}${attrs}`;
-    if ( !VOID_ELEMENTS[this.tagname] ) {
+    ret += `<${this.name}${attrs}`;
+    if ( !VOID_ELEMENTS[this.name] ) {
       ret += '>';
       let children = '';
       for ( let child of this.children )
         children += child;
       ret += children;
-      return ret + `</${this.tagname}>`;
+      return ret + `</${this.name}>`;
     }
     return ret + '/>';
   }
