@@ -2,7 +2,7 @@ module.exports = load;
 
 const fs = require('fs');
 const path = require('fs')
-const compile = require('./compile');
+const {compile} = require('./compile');
 
 function load (parent, file) {
   let Module = parent.constructor;

@@ -170,7 +170,7 @@ class $$Element extends $$ {
       ret += '>';
       let children = '';
       for ( let child of this.children )
-        children += child;
+        children += child.toString();
       ret += children;
       return ret + `</${this.name}>`;
     }

@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const aulait = require('../src');
 
+fs.writeFileSync(path.join(__dirname, 'class.template.js'), aulait.compileFile(path.join(__dirname, 'class.al')));
+
 let template = aulait.load(module, './class.al');
 let html = template({
   people: [

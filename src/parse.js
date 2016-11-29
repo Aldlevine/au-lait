@@ -294,12 +294,6 @@ function parseTag (scr) {
     char = scr.next();
   }
 
-  // Document
-  // if ( char == DOCUMENT ) {
-  //   let value = parseExpression(scr);
-  //   tag = new Tag({type: 'document', declare, returns, value});
-  // }
-
   // Element or Group
   if ( char == ELEMENT ) {
     // Group
@@ -378,7 +372,7 @@ function parse (...args) {
     indentCount: 2,
     indentLevel: -1,
   }, args[1]);
-  let scr = typeof args[0] === 'string' ? new Scanner(args[0], opts.file, opts.indentChar, opts.indentCount) : args[0];
+  let scr = typeof args[0] === 'string' ? new Scanner('\n'+args[0].replace(/\r/g, ''), opts.file, opts.indentChar, opts.indentCount) : args[0];
 
   let fullContent = [];
   let content = [];
@@ -394,10 +388,10 @@ function parse (...args) {
     if ( char == '\n' ) {
       content.push(chunk);
       indentLevel = scr.getIndentLevel();
-      chunk = char + Array(indentLevel * opts.indentCount).join(opts.indentChar);
+      chunk = char + Array(indentLevel * opts.indentCount + 1).join(opts.indentChar);
       if( indentLevel <= opts.indentLevel && scr.peek()[0] != '\n') {
         if ( indentLevel > 0 )
-          scr.prev(chunk.length+1)
+          scr.prev(chunk.length)
         else
           scr.prev(chunk.length)
         chunk = '';
@@ -416,7 +410,8 @@ function parse (...args) {
         content.push(chunk);
         tag = parseTag(scr);
         tag.content = parse(scr, {indentLevel});
-        tag.indent = Array(indentLevel * opts.indentCount).join(opts.indentChar);
+        tag.indent = Array(indentLevel * opts.indentCount + 1).join(opts.indentChar);
+        // console.log(indentLevel, opts.indentCount, Array((indentLevel * opts.indentCount) + 1).join(opts.indentChar));
         content.push(tag);
         chunk = '';
         continue;
