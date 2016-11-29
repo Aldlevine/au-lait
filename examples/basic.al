@@ -1,4 +1,4 @@
-const $$ = require('./src/dom');
+const $$ = require('../src/dom');
 
 module.exports =
 <?(names=[])>

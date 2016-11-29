@@ -1,5 +1,5 @@
 const fs = require('fs');
-const compile = require('./compile');
+const compile = require('./src/compile');
 
 require.extensions['.al'] = (module, filename) => {
   let al = fs.readFileSync(filename, 'utf8');
