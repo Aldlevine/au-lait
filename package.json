@@ -1,19 +1,15 @@
 {
-  "name": "aulait",
-  "version": "0.0.1",
-  "description": "A language for embedded JS/HTML similar to imba or JSX.",
-  "main": "src/index.js",
+  "name": "aulait-web",
+  "version": "1.0.0",
+  "description": "Website for Au Lait",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Aldlevine/au-lait.git"
   },
   "author": "Aaron Levine",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Aldlevine/au-lait/issues"
+    "url": "https://github.com/Aldlevine/aulait/issues"
   },
-  "homepage": "https://github.com/Aldlevine/au-lait#readme"
+  "homepage": "https://github.com/Aldlevine/aulait#readme"
 }
