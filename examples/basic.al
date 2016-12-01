@@ -1,5 +1,3 @@
-const $$ = require('../src/dom');
-
 module.exports =
 <?(names=[])>
   <:doctype 'html'>

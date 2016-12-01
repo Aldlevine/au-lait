@@ -1,5 +1,3 @@
-const $$ = require('../src/dom');
-
 <@Children:$$.Component>
   <?render()>
     if ( @children.size == 0 ) <|' has no children'>

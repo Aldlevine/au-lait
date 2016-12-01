@@ -1,6 +1,4 @@
-
-const $$ = require('../src/dom');
-
+module.exports = ($$)=>{
 module.exports =
 (names=[])=>{return $$.group(($$parent)=>{
   $$parent.element("doctype", "", [], 'html', ($$parent)=>{})
@@ -22,3 +20,4 @@ module.exports =
     })
   })
 })}
+}

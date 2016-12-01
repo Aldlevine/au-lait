@@ -18,8 +18,6 @@ _See examples for more_
 
 index.al
 ```javascript
-const $$ = require('aulait/dom');
-
 module.exports =
 <?(names=[])>
   <:doctype 'html'>
@@ -41,8 +39,6 @@ let html = template(['Adam', 'Benjamin', 'Chris']);
 ```
 template.toString()
 ```javascript
-const $$ = require('aulait/dom');
-
 (names=[])=>{return $$.group(($$parent)=>{
  $$parent.element("doctype", "", [], 'html', ($$parent)=>{})
  $$parent.element("html", "", [], {}, ($$parent)=>{

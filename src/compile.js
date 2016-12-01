@@ -7,7 +7,7 @@ const compileAST = require('./compile-ast');
 function compile (str, opts={}) {
   let content = parse(str, opts);
   let js = compileAST(content);
-  return js;
+  return `module.exports = ($$)=>{${js}}`;
 }
 
 function compileFile (file, opts) {

@@ -34,12 +34,14 @@ function compileAST (content) {
       ext = chunk.value.length ? ` extends ${chunk.value}` : '';
       chunkContent = compileAST(chunk.content);
       chunkIndent = /\n/.test(chunkContent) ? `\n${chunk.indent}` : '';
-      chunkStr = `class ${chunk.name}${ext} {${chunkContent}${chunkIndent}}`;
+      chunkStr = chunk.returns ? 'return ' : '';
+      chunkStr += `class ${chunk.name}${ext} {${chunkContent}${chunkIndent}}`;
     }
     else if ( chunk.type == 'function' ) {
       chunkContent = compileAST(chunk.content);
       chunkIndent = /\n/.test(chunkContent) ? `\n${chunk.indent}` : '';
-      chunkStr = `${chunk.value}=>{return $$.group(($$parent)=>{${chunkContent}${chunkIndent}})}`;
+      chunkStr = chunk.returns ? 'return ' : '';
+      chunkStr += `${chunk.value}=>{return $$.group(($$parent)=>{${chunkContent}${chunkIndent}})}`;
     }
     else if ( chunk.type == 'member-function' ) {
       chunkContent = compileAST(chunk.content);

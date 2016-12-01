@@ -5,6 +5,10 @@ const aulait = require('../src');
 fs.writeFileSync(path.join(__dirname, 'class.template.js'), aulait.compileFile(path.join(__dirname, 'class.al')));
 
 let template = aulait.load(module, './class.al');
+
+// require('../register');
+// let template = require('./class.al');
+
 let html = template({
   people: [
     {

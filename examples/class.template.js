@@ -1,6 +1,4 @@
-
-const $$ = require('../src/dom');
-
+module.exports = ($$)=>{
 class Children extends $$.Component {
   render () {return $$.group(($$parent)=>{
     if ( this.children.size == 0 ) $$parent.text(' has no children')
@@ -46,3 +44,4 @@ module.exports =
   })
   $$parent.comment('Just a comment to show you how comments work')
 })}
+}

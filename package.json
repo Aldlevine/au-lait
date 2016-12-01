@@ -1,6 +1,6 @@
 {
   "name": "aulait",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A language for embedded JS/HTML similar to imba or JSX.",
   "main": "src/index.js",
   "scripts": {
